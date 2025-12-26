@@ -3,42 +3,41 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Construir connection string con debugging
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+// Obtener DATABASE_URL de Railway
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+string connectionString;
 
-Console.WriteLine($"DATABASE_URL: {connectionString ?? "NULL"}");
-
-if (string.IsNullOrEmpty(connectionString))
+if (!string.IsNullOrEmpty(databaseUrl))
 {
+    // Convertir formato postgresql:// a formato Npgsql
+    var uri = new Uri(databaseUrl);
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={uri.UserInfo.Split(':')[0]};Password={uri.UserInfo.Split(':')[1]}";
+
+    Console.WriteLine($"Connection string convertido desde DATABASE_URL");
+}
+else
+{
+    // Intentar construir desde variables individuales
     var host = Environment.GetEnvironmentVariable("PGHOST");
     var dbPort = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";
     var database = Environment.GetEnvironmentVariable("PGDATABASE");
     var user = Environment.GetEnvironmentVariable("PGUSER");
     var password = Environment.GetEnvironmentVariable("PGPASSWORD");
 
-    Console.WriteLine($"PGHOST: {host ?? "NULL"}");
-    Console.WriteLine($"PGPORT: {dbPort}");
-    Console.WriteLine($"PGDATABASE: {database ?? "NULL"}");
-    Console.WriteLine($"PGUSER: {user ?? "NULL"}");
-
-    if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(database) && !string.IsNullOrEmpty(user))
+    if (!string.IsNullOrEmpty(host))
     {
         connectionString = $"Host={host};Port={dbPort};Database={database};Username={user};Password={password}";
-        Console.WriteLine("Connection string construido desde variables individuales");
+        Console.WriteLine("Connection string desde variables individuales");
     }
     else
     {
+        // Fallback a appsettings.json
         connectionString = builder.Configuration.GetConnectionString("DefaultConnectionString");
         Console.WriteLine("Usando appsettings.json");
     }
 }
 
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new Exception("No se pudo construir la connection string. Verifica las variables de entorno.");
-}
-
-Console.WriteLine($"Connection string final (ofuscada): {connectionString?.Substring(0, Math.Min(50, connectionString.Length))}...");
+Console.WriteLine($"Connection string (primeros 50 chars): {connectionString?.Substring(0, Math.Min(50, connectionString?.Length ?? 0))}");
 
 builder.Services.AddDbContext<AbarrotesReyesContext>(options =>
     options.UseNpgsql(connectionString));
