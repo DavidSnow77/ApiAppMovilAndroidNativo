@@ -1,0 +1,6 @@
+@Abarrotes_HostAddress = http://localhost:5127
+
+GET {{Abarrotes_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
