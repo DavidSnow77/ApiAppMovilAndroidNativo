@@ -9,14 +9,14 @@ var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
 if (string.IsNullOrEmpty(connectionString))
 {
     var host = Environment.GetEnvironmentVariable("PGHOST");
-    var port = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";
+    var dbPort = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";  // ? Cambié "port" por "dbPort"
     var database = Environment.GetEnvironmentVariable("PGDATABASE");
     var user = Environment.GetEnvironmentVariable("PGUSER");
     var password = Environment.GetEnvironmentVariable("PGPASSWORD");
 
     if (!string.IsNullOrEmpty(host))
     {
-        connectionString = $"Host={host};Port={port};Database={database};Username={user};Password={password}";
+        connectionString = $"Host={host};Port={dbPort};Database={database};Username={user};Password={password}";
     }
     else
     {
