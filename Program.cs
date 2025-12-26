@@ -3,10 +3,26 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// ? CAMBIO 1: Leer DATABASE_URL de Railway o appsettings.json local
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
-    ?? builder.Configuration.GetConnectionString("DefaultConnectionString");
+// Construir connection string desde variables de Railway o appsettings.json
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    var host = Environment.GetEnvironmentVariable("PGHOST");
+    var port = Environment.GetEnvironmentVariable("PGPORT") ?? "5432";
+    var database = Environment.GetEnvironmentVariable("PGDATABASE");
+    var user = Environment.GetEnvironmentVariable("PGUSER");
+    var password = Environment.GetEnvironmentVariable("PGPASSWORD");
+
+    if (!string.IsNullOrEmpty(host))
+    {
+        connectionString = $"Host={host};Port={port};Database={database};Username={user};Password={password}";
+    }
+    else
+    {
+        connectionString = builder.Configuration.GetConnectionString("DefaultConnectionString");
+    }
+}
 
 builder.Services.AddDbContext<AbarrotesReyesContext>(options =>
     options.UseNpgsql(connectionString));
@@ -24,21 +40,21 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ? CAMBIO 2: Puerto dinámico para Railway
+// Puerto dinámico para Railway
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
 
-// ? CAMBIO 3: Ejecutar migraciones automáticamente
+// Ejecutar migraciones automáticamente
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AbarrotesReyesContext>();
-    db.Database.Migrate(); // Esto ejecuta las migraciones al iniciar
+    db.Database.Migrate();
 }
 
 app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
 
-app.Run(); // ? QUITA el segundo app.Run() que tenías duplicado
+app.Run();
